@@ -72,6 +72,12 @@ pub fn read_csv<T: CsvTrait>(path: &Path) -> Result<Vec<T>, Box<dyn std::error::
 }
 
 pub fn write_file(path: &Path, list: Vec<String>)-> Result<(), Box<dyn std::error::Error>> {
+    let parent = path.parent().unwrap();
+    if !parent.exists() {
+        fs::create_dir_all(&parent).unwrap_or_else(|e| {
+            panic!("Could not create target directory: {}, {:?}", parent.display(), e)
+        });
+    }
     let mut file: File = File::create(path)?;
     for ele in list {
         file.write(ele.as_bytes())?;
