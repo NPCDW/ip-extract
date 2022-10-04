@@ -3,7 +3,7 @@ use std::io::{self, Read, Write, BufReader, BufRead};
 use std::path::Path;
 
 #[tokio::main]
-pub async fn download_file(url: &str, path: &Path) -> Result<File, Box<dyn std::error::Error>> {
+pub async fn download_file(url: &str, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let body = reqwest::get(url).await?
         .bytes().await?;
     let dir = path.parent();
@@ -20,10 +20,13 @@ pub async fn download_file(url: &str, path: &Path) -> Result<File, Box<dyn std::
     let data: Result<Vec<_>, _> = content.collect();
     file.write_all(&data.unwrap())?;
 
-    Ok(file)
+    Ok(())
 }
 
-pub fn unzip(zip_file: &File, target: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn unzip(source: &Path, target: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let zip_file = File::open(source).unwrap_or_else(|e| {
+        panic!("open file error {}", e)
+    });
     if !target.exists() {
         fs::create_dir_all(target).unwrap_or_else(|e| {
             panic!("Could not create target directory: {}, {:?}", target.display(), e)
@@ -95,10 +98,7 @@ mod file_util_test {
     fn unzip_test() {
         let path = Path::new("/data/test/test2/IP2LOCATION-LITE-DB1.IPV6.CSV.ZIP");
         let target_path = Path::new("/data/test/");
-        let file = File::open(path).unwrap_or_else(|e| {
-            panic!("open file error {}", e)
-        });
-        unzip(&file, &target_path).unwrap_or_else(|e| {
+        unzip(&path, &target_path).unwrap_or_else(|e| {
             panic!("unzip file error {}", e)
         });
 

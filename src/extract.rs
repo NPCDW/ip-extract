@@ -64,15 +64,11 @@ pub fn collect(list: &[IpLocation], exclude_country_code: &str) -> Result<Vec<St
 pub fn format_proxifier(list: Vec<String>) -> Vec<String> {
     let mut result: Vec<String> = Default::default();
     for (index, value) in list.iter().enumerate() {
-        result.push(format!("\t\t<Rule enabled=\"true\">\n
-\\
-        \t\t\t<Action type=\"Proxy\">100</Action>\n
-\\
-        \t\t\t<Targets>{}</Targets>\n
-\\
-        \t\t\t<Name>IP-PROXY-{}</Name>\n
-\\
-        \t\t</Rule>\n", value, index))
+        result.push(format!("\t\t<Rule enabled=\"true\">
+\t\t\t<Action type=\"Proxy\">100</Action>
+\t\t\t<Targets>{}</Targets>
+\t\t\t<Name>IP-PROXY-{}</Name>
+\t\t</Rule>\n", value, index))
     }
     result
 }
