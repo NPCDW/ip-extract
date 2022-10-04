@@ -51,37 +51,16 @@ pub fn unzip(zip_file: &File, target: &Path) -> Result<(), Box<dyn std::error::E
     Ok(())
 }
 
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct IpLocation {
-    ip_start: String,
-    ip_end: String,
-    country_code: String,
-    country_name: String,
+pub trait CsvTrait {
+    fn new(line: String) -> Option<Self> where Self: Sized;
 }
 
-impl IpLocation {
-    fn new(line: String) -> Option<Self> {
-        let line = line.replace("\"","");
-        let split = line.split(",").collect::<Vec<&str>>();
-        if split.len() != 4 {
-            return None;
-        }
-        Some(Self {
-            ip_start: split.get(0)?.to_string(),
-            ip_end: split.get(1)?.to_string(),
-            country_code: split.get(2)?.to_string(),
-            country_name: split.get(3)?.to_string(),
-        })
-    }
-}
-
-pub fn read_csv(path: &Path) -> Result<Vec<IpLocation>, Box<dyn std::error::Error>> {
+pub fn read_csv<T: CsvTrait>(path: &Path) -> Result<Vec<T>, Box<dyn std::error::Error>> {
     let file: File = File::open(path)?;
     let mut list = vec![];
     let lines = BufReader::new(file).lines();
     for line in lines {
-        match IpLocation::new(line?) {
+        match T::new(line?) {
             None => continue,
             Some(x) => list.push(x),
         }
@@ -89,9 +68,18 @@ pub fn read_csv(path: &Path) -> Result<Vec<IpLocation>, Box<dyn std::error::Erro
     Ok(list)
 }
 
+pub fn write_file(path: &Path, list: Vec<String>)-> Result<(), Box<dyn std::error::Error>> {
+    let mut file: File = File::create(path)?;
+    for ele in list {
+        file.write(ele.as_bytes())?;
+    }
+    file.flush()?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod file_util_test {
-    use crate::file_tool::*;
+    use crate::{file_tool::*, extract::IpLocation};
 
     #[test]
     fn download_file_test() {
@@ -125,11 +113,29 @@ mod file_util_test {
     #[test]
     fn read_csv_test() {
         let file_path = Path::new("/data/test/IP2LOCATION-LITE-DB1.IPV6.CSV");
-        let list = read_csv(&file_path).unwrap_or_else(|e| {
+        let list: Vec<IpLocation> = read_csv::<IpLocation>(&file_path).unwrap_or_else(|e| {
             panic!("read csv file error {}", e)
         });
     
         assert_eq!(true, list.len() > 0);
         assert_eq!("281470681743359", list.get(0).unwrap().ip_end);
+    }
+    
+    #[test]
+    fn write_file_test() {
+        let file_path = Path::new("/data/test/test-write.txt");
+        let list = vec!["123".to_string(), "789".to_string(), "456".to_string()];
+        write_file(file_path, list).unwrap_or_else(|e| {
+            panic!("write file error {}", e)
+        });
+        let mut result = String::new();
+        let mut file = File::open(file_path).unwrap_or_else(|e| {
+            panic!("open file error {}", e)
+        });
+        file.read_to_string(&mut result).unwrap_or_else(|e| {
+            panic!("read file error {}", e)
+        });
+    
+        assert_eq!("123789456", result);
     }
 }
