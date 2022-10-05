@@ -15,8 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     println!("download file successed! path:{}", download_dir.display());
 
-    let unzip_dir = format!("{}/IP2LOCATION-LITE-DB1.CSV.ZIP", param.unzip_dir);
-    let unzip_dir = Path::new(&unzip_dir);
+    let unzip_dir = Path::new(&param.unzip_dir);
     file_tool::unzip(&download_dir, unzip_dir).unwrap_or_else(|e| {
         panic!("unzip file error {}", e)
     });
