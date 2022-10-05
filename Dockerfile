@@ -22,5 +22,5 @@ RUN cargo install --path .
 # Copy the statically-linked binary into a scratch container.
 FROM debian:buster-slim
 COPY --from=build /usr/local/cargo/bin/${APP_NAME} /usr/local/bin/${APP_NAME}
-USER 1000
+USER root
 CMD ${APP_NAME}
