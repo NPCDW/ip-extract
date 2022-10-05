@@ -1,8 +1,26 @@
-FROM rust:1.64.0
+# Dockerfile for creating a statically-linked Rust application using docker's
+# multi-stage build feature. This also leverages the docker build cache to avoid
+# re-downloading dependencies if they have not changed.
+FROM rust:1.64.0 AS build
 
-WORKDIR /usr/src/ip-extract
-COPY . .
+ENV APP_NAME ip-extract
 
+WORKDIR /usr/src
+
+# Create a dummy project and build the app's dependencies.
+# If the Cargo.toml or Cargo.lock files have not changed,
+# we can use the docker build cache and skip these (typically slow) steps.
+RUN USER=root cargo new ${APP_NAME}
+WORKDIR /usr/src/${APP_NAME}
+COPY ./${APP_NAME}/Cargo.toml ./${APP_NAME}/Cargo.lock ./
+RUN cargo build --release
+
+# Copy the source and build the application.
+COPY ./${APP_NAME}/src ./src
 RUN cargo install --path .
 
-CMD ["ip-extract"]
+# Copy the statically-linked binary into a scratch container.
+FROM debian:buster-slim
+COPY --from=build /usr/local/cargo/bin/${APP_NAME} /usr/local/bin/${APP_NAME}
+USER 1000
+CMD ${APP_NAME}
