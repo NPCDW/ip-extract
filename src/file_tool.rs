@@ -33,7 +33,7 @@ pub fn unzip(source: &Path, target: &Path) -> Result<(), Box<dyn std::error::Err
         });
     }
     if target.is_file() {
-        panic!("Could not create target directory: {}, Because a file with the same name exists, {:?}", target.display(), e)
+        panic!("Could not create target directory: {}, Because a file with the same name exists", target.display())
     }
     let mut zip = zip::ZipArchive::new(zip_file)?;
     for i in 0..zip.len() {
