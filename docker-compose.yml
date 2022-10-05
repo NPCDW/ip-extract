@@ -1,0 +1,19 @@
+version: '3.3'
+
+services:
+  ip-extract:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ip-extract
+    container_name: ip-extract
+    volumes:
+      - "${PWD}/data/:/data/"
+    environment:
+      TZ : 'Asia/Shanghai'
+      LANG: 'C.UTF-8'
+      LC_ALL: 'C.UTF-8'
+      IP2LOCATION_TOKEN: 'Bpty9cFpYzCxnL5F2Fhkqxu9FVZm0tT1GRN66ycs3w6xJv7qD1Gc2HeCiCMcfFqc'
+      DOWNLOAD_DIR: '/data'
+      UNZIP_DIR: '/data'
+      OUTPUT_DIR: '/data'
