@@ -12,11 +12,11 @@ WORKDIR /usr/src
 # we can use the docker build cache and skip these (typically slow) steps.
 RUN USER=root cargo new ${APP_NAME}
 WORKDIR /usr/src/${APP_NAME}
-COPY ./${APP_NAME}/Cargo.toml ./${APP_NAME}/Cargo.lock ./
+COPY ./Cargo.toml ./Cargo.lock ./
 RUN cargo build --release
 
 # Copy the source and build the application.
-COPY ./${APP_NAME}/src ./src
+COPY ./src ./src
 RUN cargo install --path .
 
 # Copy the statically-linked binary into a scratch container.
