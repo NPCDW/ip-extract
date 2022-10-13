@@ -89,7 +89,7 @@ pub struct CidrIpv4Info {
 pub fn cidr_to_ipv4(cidr: &str) -> Option<CidrIpv4Info> {
     let (ip, prefix) = cidr.split_at(cidr.rfind("/")?);
     let ip = ipv4_to_u32(ip)?;
-    let prefix: u32 = match prefix[1..].parse::<u32>() {
+    let prefix: u8 = match prefix[1..].parse::<u8>() {
         Err(_) => None,
         Ok(x) => Some(x),
     }?;
@@ -133,7 +133,7 @@ pub struct CidrIpv6Info {
 pub fn cidr_to_ipv6(cidr: &str) -> Option<CidrIpv6Info> {
     let (ip, prefix) = cidr.split_at(cidr.rfind("/")?);
     let ip = ipv6_to_u128(ip)?;
-    let prefix: u128 = match prefix[1..].parse::<u128>() {
+    let prefix: u8 = match prefix[1..].parse::<u8>() {
         Err(_) => None,
         Ok(x) => Some(x),
     }?;
@@ -293,28 +293,21 @@ mod ip_tool_test {
             ip_start: "cdcd:910a:2222:5498:0:0:0:0".to_string(),
             ip_end: "cdcd:910a:2222:5498:ffff:ffff:ffff:ffff".to_string(),
             mask: "ffff:ffff:ffff:ffff:0:0:0:0".to_string(),
-            count: 1024,
-        }, cidr_to_ipv6("103.165.84.5/22").unwrap());
-        // assert_eq!(CidrIpv6Info {
-        //     cidr: "0.0.0.0/14".to_string(),
-        //     ip_start: "0.0.0.0".to_string(),
-        //     ip_end: "0.3.255.255".to_string(),
-        //     mask: "255.252.0.0".to_string(),
-        //     count: 262144,
-        // }, cidr_to_ipv6("0.0.0.0/14").unwrap());
-        // assert_eq!(CidrIpv6Info {
-        //     cidr: "0.0.0.0/0".to_string(),
-        //     ip_start: "0.0.0.0".to_string(),
-        //     ip_end: "255.255.255.255".to_string(),
-        //     mask: "0.0.0.0".to_string(),
-        //     count: 0, // 最大为 4294967296 ，u32 放不下，被挤到 0
-        // }, cidr_to_ipv6("0.0.0.0/0").unwrap());
-        // assert_eq!(CidrIpv6Info {
-        //     cidr: "1.1.1.1/32".to_string(),
-        //     ip_start: "1.1.1.1".to_string(),
-        //     ip_end: "1.1.1.1".to_string(),
-        //     mask: "255.255.255.255".to_string(),
-        //     count: 1,
-        // }, cidr_to_ipv6("1.1.1.1/32").unwrap());
+            count: 2_u128.pow(64),
+        }, cidr_to_ipv6("CDCD:910A:2222:5498:8475:1111:3900:2020/64").unwrap());
+        assert_eq!(CidrIpv6Info {
+            cidr: "::0/0".to_string(),
+            ip_start: "0:0:0:0:0:0:0:0".to_string(),
+            ip_end: "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff".to_string(),
+            mask: "0:0:0:0:0:0:0:0".to_string(),
+            count: 0, // 最大为 4294967296 ，u32 放不下，被挤到 0
+        }, cidr_to_ipv6("::0/0").unwrap());
+        assert_eq!(CidrIpv6Info {
+            cidr: "::1/128".to_string(),
+            ip_start: "0:0:0:0:0:0:0:1".to_string(),
+            ip_end: "0:0:0:0:0:0:0:1".to_string(),
+            mask: "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff".to_string(),
+            count: 1,
+        }, cidr_to_ipv6("::1/128").unwrap());
     }
 }
