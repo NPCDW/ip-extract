@@ -25,7 +25,7 @@ pub fn ipv6_to_u128(ipv6: &str) -> Option<u128> {
             None => ipv6,
             Some(pos) => &ipv6[pos+1..],
         };
-        return Some((ipv4_to_u32(ipv4)? as u128) | 0xffff00000000);
+        return Some((ipv4_to_u32(ipv4)? as u128) | 0xffff_0000_0000);
     }
     let mut split = ipv6.split([':'].as_ref()).collect::<Vec<&str>>();
     loop {
@@ -64,8 +64,8 @@ pub fn u32_to_ipv4(mut number: u32) -> String {
 
 #[allow(dead_code)]
 pub fn u128_to_ipv6(mut number: u128) -> String {
-    if number < 281474976710656 {
-        return u32_to_ipv4((number & 0xffffffff).try_into().unwrap());
+    if number <= 0xffff_ffff_ffff {
+        return u32_to_ipv4((number & 0xffff_ffff).try_into().unwrap());
     }
     let mut arr: [String; 8] = Default::default();
     for i in (0..8).rev() {
