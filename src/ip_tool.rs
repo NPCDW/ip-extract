@@ -75,6 +75,81 @@ pub fn u128_to_ipv6(mut number: u128) -> String {
     arr.join(":")
 }
 
+#[allow(dead_code)]
+#[derive(PartialEq, Debug)]
+pub struct CidrIpv4Info {
+    cidr: String,
+    ip_start: String,
+    ip_end: String,
+    mask: String,
+    count: u32,
+}
+
+#[allow(dead_code)]
+pub fn cidr_to_ipv4(cidr: &str) -> Option<CidrIpv4Info> {
+    let (ip, prefix) = cidr.split_at(cidr.rfind("/")?);
+    let ip = ipv4_to_u32(ip)?;
+    let prefix: u32 = match prefix[1..].parse::<u32>() {
+        Err(_) => None,
+        Ok(x) => Some(x),
+    }?;
+    let mask = if prefix == 0 {
+        u32::MIN
+    } else if prefix == 32 {
+        u32::MAX
+    } else {
+        (2_u32.pow(prefix) - 1) << (32 - prefix)
+    };
+    // 数量的范围为 1..(u32::MAX + 1)，最大值用 u32 放不下，用 0 表示
+    let count = if prefix == 0 {
+        0
+    } else if prefix == 32 {
+        1
+    } else {
+        2_u32.pow(32 - prefix)
+    };
+    let ip_start = ip & mask;
+    let ip_end = ip | count.wrapping_sub(1);
+    Some(CidrIpv4Info {
+        cidr: cidr.to_string(),
+        ip_start: u32_to_ipv4(ip_start),
+        ip_end: u32_to_ipv4(ip_end),
+        mask: u32_to_ipv4(mask),
+        count,
+    })
+}
+
+// #[allow(dead_code)]
+// #[derive(PartialEq, Debug)]
+// pub struct CidrIpv6Info {
+//     cidr: String,
+//     ip_start: String,
+//     ip_end: String,
+//     mask: String,
+//     count: u128,
+// }
+
+// #[allow(dead_code)]
+// pub fn cidr_to_ipv6(cidr: &str) -> Option<CidrIpv6Info> {
+//     let (ip, prefix) = cidr.split_at(cidr.rfind("/")?);
+//     let ip = ipv4_to_u32(ip)?;
+//     let prefix: u32 = match prefix[1..].parse::<u32>() {
+//         Err(_) => None,
+//         Ok(x) => Some(x),
+//     }?;
+//     let mask = (2_u32.pow(prefix) - 1) << (32 - prefix);
+//     let count = 2_u32.pow(32 - prefix);
+//     let ip_start = ip & mask;
+//     let ip_end = ip | (count - 1);
+//     Some(CidrIpv6Info {
+//         cidr: cidr.to_string(),
+//         ip_start: u32_to_ipv4(ip_start),
+//         ip_end: u32_to_ipv4(ip_end),
+//         mask: u32_to_ipv4(mask),
+//         count,
+//     })
+// }
+
 #[cfg(test)]
 mod ip_tool_test {
     use crate::ip_tool::*;
@@ -163,4 +238,37 @@ mod ip_tool_test {
         assert_eq!("223.255.255.255", u128_to_ipv6(281474439839743));
         assert_eq!("255.255.255.255", u128_to_ipv6(281474976710655));
     }
+    
+    #[test]
+    fn cidr_to_ipv4_test() {
+        assert_eq!(CidrIpv4Info {
+            cidr: "103.165.84.5/22".to_string(),
+            ip_start: "103.165.84.0".to_string(),
+            ip_end: "103.165.87.255".to_string(),
+            mask: "255.255.252.0".to_string(),
+            count: 1024,
+        }, cidr_to_ipv4("103.165.84.5/22").unwrap());
+        assert_eq!(CidrIpv4Info {
+            cidr: "0.0.0.0/14".to_string(),
+            ip_start: "0.0.0.0".to_string(),
+            ip_end: "0.3.255.255".to_string(),
+            mask: "255.252.0.0".to_string(),
+            count: 262144,
+        }, cidr_to_ipv4("0.0.0.0/14").unwrap());
+        assert_eq!(CidrIpv4Info {
+            cidr: "0.0.0.0/0".to_string(),
+            ip_start: "0.0.0.0".to_string(),
+            ip_end: "255.255.255.255".to_string(),
+            mask: "0.0.0.0".to_string(),
+            count: 0, // 最大为 4294967296 ，u32 放不下，被挤到 0
+        }, cidr_to_ipv4("0.0.0.0/0").unwrap());
+        assert_eq!(CidrIpv4Info {
+            cidr: "1.1.1.1/32".to_string(),
+            ip_start: "1.1.1.1".to_string(),
+            ip_end: "1.1.1.1".to_string(),
+            mask: "255.255.255.255".to_string(),
+            count: 1,
+        }, cidr_to_ipv4("1.1.1.1/32").unwrap());
+    }
+    
 }
