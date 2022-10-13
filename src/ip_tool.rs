@@ -1,5 +1,6 @@
 #[allow(dead_code)]
-fn ipv4_split_to_u32(split: Vec<&str>) -> Option<u32> {
+pub fn ipv4_to_u32(ipv4: &str) -> Option<u32> {
+    let split = ipv4.split(".").collect::<Vec<&str>>();
     if split.len() != 4 {
         return None;
     }
@@ -18,19 +19,24 @@ fn ipv4_split_to_u32(split: Vec<&str>) -> Option<u32> {
 }
 
 #[allow(dead_code)]
-pub fn ipv4_to_u32(ipv4: &str) -> Option<u32> {
-    let split = ipv4.split(".").collect::<Vec<&str>>();
-    ipv4_split_to_u32(split)
-}
-
-#[allow(dead_code)]
 pub fn ipv6_to_u128(ipv6: &str) -> Option<u128> {
-    let split = ipv6.split([':', '.'].as_ref()).collect::<Vec<&str>>();
-    if split.len() == 4 {
-        return Some((ipv4_split_to_u32(split)? as u128) | 0xffff00000000);
+    if ipv6.contains(".") {
+        let ipv4 = match ipv6.rfind(":") {
+            None => ipv6,
+            Some(pos) => &ipv6[pos+1..],
+        };
+        return Some((ipv4_to_u32(ipv4)? as u128) | 0xffff00000000);
     }
-    if split.len() != 8 {
-        return None;
+    let mut split = ipv6.split([':'].as_ref()).collect::<Vec<&str>>();
+    loop {
+        let blank_pos = match split.iter().position(|&x| x == "") {
+            None => break,
+            Some(pos) => pos,
+        };
+        let _ = std::mem::replace(&mut split[blank_pos], "0");
+        while split.len() != 8 {
+            split.insert(blank_pos, "0");
+        }
     }
     let mut number: u128 = match u128::from_str_radix(split.get(0)?, 16) {
         Err(_) => None,
@@ -109,6 +115,16 @@ mod ip_tool_test {
             panic!("convert 2001:200:0:0:0:0:0:0 to u128 fail")
         }
         assert_eq!(42540528726795050063891204319802818560, x.unwrap());
+        let x = ipv6_to_u128("2001:200::1");
+        if x == None {
+            panic!("convert 2001:200::1 to u128 fail")
+        }
+        assert_eq!(42540528726795050063891204319802818561, x.unwrap());
+        let x = ipv6_to_u128("::1");
+        if x == None {
+            panic!("convert ::1 to u128 fail")
+        }
+        assert_eq!(1, x.unwrap());
         let x = ipv6_to_u128("255.255.255.255");
         if x == None {
             panic!("convert 255.255.255.255 to u128 fail")
@@ -117,6 +133,11 @@ mod ip_tool_test {
         let x = ipv6_to_u128("0.0.0.0");
         if x == None {
             panic!("convert 0.0.0.0 to u128 fail")
+        }
+        assert_eq!(281470681743360, x.unwrap());
+        let x = ipv6_to_u128("::0.0.0.0");
+        if x == None {
+            panic!("convert ::0.0.0.0 to u128 fail")
         }
         assert_eq!(281470681743360, x.unwrap());
         let x = ipv6_to_u128("223.255.255.255");
