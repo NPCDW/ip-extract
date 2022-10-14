@@ -163,6 +163,78 @@ pub fn cidr_to_ipv6(cidr: &str) -> Option<CidrIpv6Info> {
     })
 }
 
+#[allow(dead_code)]
+pub fn ipv4_to_cidr(ip_start: &str, ip_end: &str) -> Option<Vec<String>> {
+    let mut ip_start = ipv4_to_u32(ip_start)?;
+    let ip_end = ipv4_to_u32(ip_end)?;
+    if ip_start > ip_end {
+        return None;
+    }
+    let mut list = vec![];
+    loop {
+        let ip_start_b = format!("{:032b}", ip_start);
+        let last_one_index = ip_start_b.rfind("1");
+        let mut prefix = match last_one_index {
+            None => 0,
+            Some(x) => x + 1,
+        };
+        loop {
+            let count: u32 = if prefix == 0 { 0 } else if prefix == 32 { 1 } else {
+                1 << (32 - prefix)
+            };
+            let ip_start_mask_max_ip = ip_start | count.wrapping_sub(1);
+            if ip_start_mask_max_ip == ip_end {
+                let cidr = u32_to_ipv4(ip_start) + "/" + &prefix.to_string();
+                list.push(cidr);
+                return Some(list);
+            } else if ip_start_mask_max_ip > ip_end {
+                prefix += 1;
+            } else {
+                let cidr = u32_to_ipv4(ip_start) + "/" + &prefix.to_string();
+                list.push(cidr);
+                ip_start = ip_start_mask_max_ip + 1;
+                break;
+            }
+        }
+    }
+}
+
+#[allow(dead_code)]
+pub fn ipv6_to_cidr(ip_start: &str, ip_end: &str) -> Option<Vec<String>> {
+    let mut ip_start = ipv6_to_u128(ip_start)?;
+    let ip_end = ipv6_to_u128(ip_end)?;
+    if ip_start > ip_end {
+        return None;
+    }
+    let mut list = vec![];
+    loop {
+        let ip_start_b = format!("{:0128b}", ip_start);
+        let last_one_index = ip_start_b.rfind("1");
+        let mut prefix = match last_one_index {
+            None => 0,
+            Some(x) => x + 1,
+        };
+        loop {
+            let count: u128 = if prefix == 0 { 0 } else if prefix == 128 { 1 } else {
+                1 << (128 - prefix)
+            };
+            let ip_start_mask_max_ip = ip_start | count.wrapping_sub(1);
+            if ip_start_mask_max_ip == ip_end {
+                let cidr = u128_to_ipv6(ip_start) + "/" + &prefix.to_string();
+                list.push(cidr);
+                return Some(list);
+            } else if ip_start_mask_max_ip > ip_end {
+                prefix += 1;
+            } else {
+                let cidr = u128_to_ipv6(ip_start) + "/" + &prefix.to_string();
+                list.push(cidr);
+                ip_start = ip_start_mask_max_ip + 1;
+                break;
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod ip_tool_test {
     use crate::ip_tool::*;
@@ -309,5 +381,40 @@ mod ip_tool_test {
             mask: "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff".to_string(),
             count: 1,
         }, cidr_to_ipv6("::1/128").unwrap());
+    }
+    
+    #[test]
+    fn ipv4_to_cidr_test() {
+        assert_eq!(vec![
+            "103.165.84.0/22".to_string(),
+            "103.165.88.0/21".to_string(),
+            "103.165.96.0/23".to_string(),
+            "103.165.98.0/24".to_string(),
+        ], ipv4_to_cidr("103.165.84.0", "103.165.98.255").unwrap());
+        assert_eq!(vec![
+            "192.168.6.73/32".to_string(),
+            "192.168.6.74/31".to_string(),
+            "192.168.6.76/30".to_string(),
+            "192.168.6.80/28".to_string(),
+            "192.168.6.96/27".to_string(),
+            "192.168.6.128/30".to_string(),
+            "192.168.6.132/32".to_string(),
+        ], ipv4_to_cidr("192.168.6.73", "192.168.6.132").unwrap());
+        assert_eq!(vec![
+            "192.168.6.73/32".to_string(),
+        ], ipv4_to_cidr("192.168.6.73", "192.168.6.73").unwrap());
+        assert_eq!(vec![
+            "0.0.0.0/0".to_string(),
+        ], ipv4_to_cidr("0.0.0.0", "255.255.255.255").unwrap());
+    }
+    
+    #[test]
+    fn ipv6_to_cidr_test() {
+        assert_eq!(vec![
+            "16a0:10:ab00:1e:0:0:0:0/64".to_string(),
+        ], ipv6_to_cidr("16A0:0010:AB00:001E:0000:0000:0000:0000", "16A0:0010:AB00:001E:FFFF:FFFF:FFFF:FFFF").unwrap());
+        assert_eq!(vec![
+            "0:0:0:0:0:0:0:0/0".to_string(),
+        ], ipv6_to_cidr("::", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").unwrap());
     }
 }
