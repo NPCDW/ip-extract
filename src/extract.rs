@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{file_tool, ip_tool};
 
 #[allow(dead_code)]
@@ -23,6 +25,21 @@ impl file_tool::CsvTrait for IpLocation {
             country_name: split.get(3)?.to_string(),
         })
     }
+}
+
+pub fn to_clash(list: &[IpLocation], exclude_country_code: &str) -> HashSet<String> {
+    let mut result: HashSet<String> = Default::default();
+    let mut index = 0;
+    while index < list.len() {
+        let item = list.get(index).unwrap();
+        if exclude_country_code == item.country_code || "-" == item.country_code {
+            index += 1;
+            continue;
+        }
+        result.insert(item.country_code.to_string());
+        index += 1;
+    }
+    result
 }
 
 pub fn collect(list: &[IpLocation], exclude_country_code: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
@@ -73,6 +90,14 @@ pub fn format_proxifier(list: Vec<String>) -> Vec<String> {
     result
 }
 
+pub fn format_clash(list: HashSet<String>) -> Vec<String> {
+    let mut result: Vec<String> = Default::default();
+    for value in list {
+        result.push(format!("GEOIP,{},auto\n", value))
+    }
+    result
+}
+
 #[cfg(test)]
 mod extract_test {
     use std::path::Path;
@@ -100,4 +125,24 @@ mod extract_test {
         print!("{:#?}", format_list);
         assert_eq!(true, format_list.len() == 3);
     }
+    
+    #[test]
+    fn to_clash_test() {
+        let file_path = Path::new("E:/Temp/新建文件夹 (2)/IP2LOCATION-LITE-DB1.CSV/IP2LOCATION-LITE-DB1.CSV");
+        let list: Vec<IpLocation> = read_csv::<IpLocation>(&file_path).unwrap_or_else(|e| {
+            panic!("read csv file error {}", e)
+        });
+        let str_list2 = to_clash(&list, "CN");
+        println!("to clash successed!");
+    
+        let format_list2 = format_clash(str_list2);
+        println!("format clash successed!");
+    
+        let output_dir = file_path.parent().unwrap().join("clash.txt");
+        write_file(&output_dir, format_list2).unwrap_or_else(|e| {
+            panic!("write file error {}", e)
+        });
+        println!("write file successed! path:{}", output_dir.display());    
+    }
+    
 }

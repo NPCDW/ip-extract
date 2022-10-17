@@ -41,6 +41,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     println!("write file successed! path:{}", output_dir.display());
 
+    let str_list2 = extract::to_clash(&list, "CN");
+    println!("to clash successed!");
+
+    let format_list2 = extract::format_clash(str_list2);
+    println!("format clash successed!");
+
+    let output_dir = format!("{}/clash.txt", param.output_dir);
+    let output_dir = Path::new(&output_dir);
+    file_tool::write_file(output_dir, format_list2).unwrap_or_else(|e| {
+        panic!("write file error {}", e)
+    });
+    println!("write file successed! path:{}", output_dir.display());
+
     Ok(())
 }
 
