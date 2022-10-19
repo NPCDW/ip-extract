@@ -1,4 +1,4 @@
-use std::{path::Path, env, process};
+use std::{path::Path, env};
 
 mod extract;
 mod ip_tool;
@@ -7,7 +7,12 @@ mod file_tool;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let param = param_analysis();
 
-    let url = format!("https://www.ip2location.com/download/?token={}&file=DB1LITECSV", param.ip2location_token);
+    let url;
+    if param.ip2location_token == None {
+       url = "https://download.ip2location.com/lite/IP2LOCATION-LITE-DB1.CSV.ZIP".to_string(); 
+    } else {
+        url = format!("https://www.ip2location.com/download/?token={}&file=DB1LITECSV", param.ip2location_token.unwrap());
+    }
     let download_dir = format!("{}/IP2LOCATION-LITE-DB1.CSV.ZIP", param.download_dir);
     let download_dir = Path::new(&download_dir);
     file_tool::download_file(&url, &download_dir).unwrap_or_else(|e| {
@@ -58,17 +63,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 struct Param {
-    ip2location_token: String,
+    ip2location_token: Option<String>,
     download_dir: String,
     unzip_dir: String,
     output_dir: String,
 }
 
 fn param_analysis() -> Param {
-    let ip2location_token = env::var_os("IP2LOCATION_TOKEN").unwrap_or_else(|| {
-        println!("Missing ENV parameter 'IP2LOCATION_TOKEN'");
-        process::exit(1);
-    });
+    let ip2location_token = match env::var_os("IP2LOCATION_TOKEN") {
+        None => {
+            println!("Missing ENV parameter 'IP2LOCATION_TOKEN', Use default download url");
+            None
+        },
+        Some(x) => Some(x.to_str().unwrap().to_string()),
+    };
     let download_dir = match env::var_os("DOWNLOAD_DIR") {
         None => "/data/ip-extract".to_string(),
         Some(x) => x.to_str().unwrap().to_string(),
@@ -77,14 +85,14 @@ fn param_analysis() -> Param {
         None => "/data/ip-extract".to_string(),
         Some(x) => x.to_str().unwrap().to_string(),
     };
-    let output_dir = env::var_os("OUTPUT_DIR").unwrap_or_else(|| {
-        println!("Missing ENV parameter 'OUTPUT_DIR'");
-        process::exit(1);
-    });
+    let output_dir = match env::var_os("OUTPUT_DIR"){
+        None => "/data/ip-extract".to_string(),
+        Some(x) => x.to_str().unwrap().to_string(),
+    };
     Param {
-        ip2location_token: ip2location_token.to_str().unwrap().to_string(),
+        ip2location_token,
         download_dir,
         unzip_dir,
-        output_dir: output_dir.to_str().unwrap().to_string(),
+        output_dir,
     }
 }

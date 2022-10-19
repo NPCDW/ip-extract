@@ -93,7 +93,7 @@ pub fn format_proxifier(list: Vec<String>) -> Vec<String> {
 pub fn format_clash(list: HashSet<String>) -> Vec<String> {
     let mut result: Vec<String> = Default::default();
     for value in list {
-        result.push(format!("GEOIP,{},auto\n", value))
+        result.push(format!("  - GEOIP,{},auto\n", value))
     }
     result
 }
