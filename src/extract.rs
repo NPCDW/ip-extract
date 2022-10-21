@@ -79,7 +79,7 @@ pub fn format_proxifier(list: &Vec<(String, String)>) -> String {
 
 pub fn format_clash(list: &Vec<(String, String)>) -> String {
     let mut result = String::default();
-    result.push_str("  - GEOIP,LAN,auto\n");
+    result.push_str("  - GEOIP,LAN,DIRECT\n");
     for (from, to) in list {
         match ip_tool::ipv4_to_cidr(&from, &to) {
             None => {
@@ -93,7 +93,7 @@ pub fn format_clash(list: &Vec<(String, String)>) -> String {
             }
         };
     }
-    result.push_str("  - MATCH,auto\n");
+    result.push_str("  - MATCH,DIRECT\n");
     result
 }
 
