@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     println!("collect ip successed!");
     
-    let format_list = extract::format_proxifier(str_list);
+    let format_list = extract::format_proxifier(&str_list);
     println!("format ip successed!");
 
     let output_dir = format!("{}/proxifier.txt", param.output_dir);
@@ -46,10 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     println!("write file successed! path:{}", output_dir.display());
 
-    let str_list2 = extract::to_clash(&list, "CN");
-    println!("to clash successed!");
-
-    let format_list2 = extract::format_clash(str_list2);
+    let format_list2 = extract::format_clash(&str_list);
     println!("format clash successed!");
 
     let output_dir = format!("{}/clash.txt", param.output_dir);

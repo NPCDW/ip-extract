@@ -74,7 +74,7 @@ pub fn read_csv<T: CsvTrait>(path: &Path) -> Result<Vec<T>, Box<dyn std::error::
     Ok(list)
 }
 
-pub fn write_file(path: &Path, list: Vec<String>)-> Result<(), Box<dyn std::error::Error>> {
+pub fn write_file(path: &Path, str: String)-> Result<(), Box<dyn std::error::Error>> {
     let parent = path.parent().unwrap();
     if !parent.exists() {
         fs::create_dir_all(&parent).unwrap_or_else(|e| {
@@ -82,9 +82,7 @@ pub fn write_file(path: &Path, list: Vec<String>)-> Result<(), Box<dyn std::erro
         });
     }
     let mut file: File = File::create(path)?;
-    for ele in list {
-        file.write(ele.as_bytes())?;
-    }
+    file.write(str.as_bytes())?;
     file.flush()?;
     Ok(())
 }
@@ -133,8 +131,8 @@ mod file_util_test {
     #[test]
     fn write_file_test() {
         let file_path = Path::new("/data/test/test-write.txt");
-        let list = vec!["123".to_string(), "789".to_string(), "456".to_string()];
-        write_file(file_path, list).unwrap_or_else(|e| {
+        let str = "123789456".to_string();
+        write_file(file_path, str).unwrap_or_else(|e| {
             panic!("write file error {}", e)
         });
         let mut result = String::new();
