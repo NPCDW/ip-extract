@@ -76,6 +76,24 @@ pub fn u128_to_ipv6(mut number: u128) -> String {
 }
 
 #[allow(dead_code)]
+pub fn ipv4_to_ipv6(ipv4: &str) -> Option<String> {
+    let number = ipv4_to_u32(ipv4)?;
+    let mut number = number as u128 | 0xffff_0000_0000;
+    let mut arr: [String; 8] = Default::default();
+    for i in (0..8).rev() {
+        arr[i] = format!("{:x}", (number & 0xffff));
+        number = number >> 16;
+    }
+    Some(arr.join(":"))
+}
+
+#[allow(dead_code)]
+pub fn ipv6_to_ipv4(ipv6: &str) -> Option<String> {
+    let number = ipv6_to_u128(ipv6)?;
+    Some(u32_to_ipv4((number & 0xffff_ffff) as u32))
+}
+
+#[allow(dead_code)]
 #[derive(PartialEq, Debug)]
 pub struct CidrIpv4Info {
     cidr: String,
@@ -324,6 +342,20 @@ mod ip_tool_test {
         assert_eq!("0.0.0.0", u128_to_ipv6(281470681743360));
         assert_eq!("223.255.255.255", u128_to_ipv6(281474439839743));
         assert_eq!("255.255.255.255", u128_to_ipv6(281474976710655));
+    }
+    
+    #[test]
+    fn ipv4_to_ipv6_test() {
+        assert_eq!(Some("0:0:0:0:0:ffff:ffff:ffff".to_string()), ipv4_to_ipv6("255.255.255.255"));
+        assert_eq!(Some("0:0:0:0:0:ffff:3d80:8044".to_string()), ipv4_to_ipv6("61.128.128.68"));
+        assert_eq!(Some("0:0:0:0:0:ffff:0:0".to_string()), ipv4_to_ipv6("0.0.0.0"));
+    }
+    
+    #[test]
+    fn ipv6_to_ipv4_test() {
+        assert_eq!(Some("255.255.255.255".to_string()), ipv6_to_ipv4("0:0:0:0:0:ffff:ffff:ffff"));
+        assert_eq!(Some("61.128.128.68".to_string()), ipv6_to_ipv4("0:0:0:0:0:ffff:3d80:8044"));
+        assert_eq!(Some("0.0.0.0".to_string()), ipv6_to_ipv4("0:0:0:0:0:ffff:0:0"));
     }
     
     #[test]

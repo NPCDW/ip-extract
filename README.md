@@ -7,6 +7,8 @@
 ipv4 -> u32 , u32 -> ipv4
 ipv6 -> u128 , u128 -> ipv6
 
+ipv4 -> ipv6 , ipv6 -> ipv4
+
 ipv4 -> cidr , cidr -> ipv4
 ipv6 -> cidr , cidr -> ipv6
 ```
