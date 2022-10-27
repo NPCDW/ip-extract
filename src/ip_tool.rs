@@ -64,9 +64,9 @@ pub fn u32_to_ipv4(mut number: u32) -> String {
 
 #[allow(dead_code)]
 pub fn u128_to_ipv6(mut number: u128) -> String {
-    if number >= 0xffff_0000_0000 && number <= 0xffff_ffff_ffff {
-        return u32_to_ipv4((number & 0xffff_ffff).try_into().unwrap());
-    }
+    // if number >= 0xffff_0000_0000 && number <= 0xffff_ffff_ffff {
+    //     return u32_to_ipv4((number & 0xffff_ffff).try_into().unwrap());
+    // }
     let mut arr: [String; 8] = Default::default();
     for i in (0..8).rev() {
         arr[i] = format!("{:x}", (number & 0xffff));
@@ -339,9 +339,9 @@ mod ip_tool_test {
         assert_eq!("2001:200:0:0:0:0:0:0", u128_to_ipv6(42540528726795050063891204319802818560));
         assert_eq!("0:0:0:0:0:0:0:1", u128_to_ipv6(1));
         assert_eq!("0:0:0:0:0:0:0:0", u128_to_ipv6(0));
-        assert_eq!("0.0.0.0", u128_to_ipv6(281470681743360));
-        assert_eq!("223.255.255.255", u128_to_ipv6(281474439839743));
-        assert_eq!("255.255.255.255", u128_to_ipv6(281474976710655));
+        // assert_eq!("0.0.0.0", u128_to_ipv6(281470681743360));
+        // assert_eq!("223.255.255.255", u128_to_ipv6(281474439839743));
+        // assert_eq!("255.255.255.255", u128_to_ipv6(281474976710655));
     }
     
     #[test]
