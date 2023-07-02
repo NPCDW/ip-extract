@@ -39,6 +39,9 @@ pub fn collect(list: &[IpLocation], exclude_country_code: &str) -> Result<Vec<(S
         end_index = start_index + 1;
         while end_index < list.len() {
             let end: &IpLocation = list.get(end_index).unwrap();
+            if end.ip_end.len() - start.ip_end.len() > 5 {
+                break;
+            }
             if exclude_country_code == end.country_code || "-" == end.country_code {
                 break;
             }
@@ -46,6 +49,47 @@ pub fn collect(list: &[IpLocation], exclude_country_code: &str) -> Result<Vec<(S
         }
         let from = ip_tool::u32_to_ipv4(start.ip_start.parse::<u32>()?);
         let to = ip_tool::u32_to_ipv4(list.get(end_index - 1).unwrap().ip_end.parse::<u32>()?);
+        result.push((from, to));
+
+        start_index = end_index;
+    }
+    Ok(result)
+}
+
+#[allow(dead_code)]
+pub fn collect_ipv6(list: &[IpLocation], exclude_country_code: &str) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
+    let mut result = vec![];
+
+    let mut start_index = 0;
+    let mut end_index;
+    while start_index < list.len() {
+        let start: &IpLocation = list.get(start_index).unwrap();
+        if exclude_country_code == start.country_code || "-" == start.country_code {
+            start_index += 1;
+            continue;
+        }
+        end_index = start_index + 1;
+        while end_index < list.len() {
+            let end: &IpLocation = list.get(end_index).unwrap();
+            if end.ip_end.len() - start.ip_end.len() > 5 {
+                break;
+            }
+            if exclude_country_code == end.country_code || "-" == end.country_code {
+                break;
+            }
+            end_index += 1;
+        }
+        let start_number = start.ip_start.parse::<u128>()?;
+        let end_number = list.get(end_index - 1).unwrap().ip_end.parse::<u128>()?;
+        let from;
+        let to;
+        if start_number >= 0xffff_0000_0000 && start_number <= 0xffff_ffff_ffff {
+            from = ip_tool::u32_to_ipv4((start_number & 0xffff_ffff).try_into().unwrap());
+            to = ip_tool::u32_to_ipv4((end_number & 0xffff_ffff).try_into().unwrap());
+        } else {
+            from = ip_tool::u128_to_ipv6(start_number);
+            to = ip_tool::u128_to_ipv6(end_number);
+        }
         result.push((from, to));
 
         start_index = end_index;
@@ -83,7 +127,6 @@ pub fn format_clash(list: &Vec<(String, String)>) -> String {
     for (from, to) in list {
         match ip_tool::ipv4_to_cidr(&from, &to) {
             None => {
-                println!("{}-{}",from, to);
                 continue
             },
             Some(cidrs) => {
@@ -97,6 +140,40 @@ pub fn format_clash(list: &Vec<(String, String)>) -> String {
     result
 }
 
+
+#[allow(dead_code)]
+pub fn format_clash_ipv6(list: &Vec<(String, String)>) -> String {
+    let mut result = String::default();
+    result.push_str("  - GEOIP,LAN,DIRECT\n");
+    for (from, to) in list {
+        if to.contains(".") {
+            match ip_tool::ipv4_to_cidr(&from, &to) {
+                None => {
+                    continue
+                },
+                Some(cidrs) => {
+                    for cidr in cidrs {
+                        result.push_str(&format!("  - IP-CIDR,{},auto\n", cidr));
+                    }
+                }
+            };
+        } else {
+            match ip_tool::ipv6_to_cidr(&from, &to) {
+                None => {
+                    continue
+                },
+                Some(cidrs) => {
+                    for cidr in cidrs {
+                        result.push_str(&format!("  - IP-CIDR,{},auto\n", cidr));
+                    }
+                }
+            };
+        }
+    }
+    result.push_str("  - MATCH,DIRECT\n");
+    result
+}
+
 #[cfg(test)]
 mod extract_test {
     use std::path::Path;
@@ -105,7 +182,7 @@ mod extract_test {
 
     #[test]
     fn collect_test() {
-        let file_path = Path::new("/data/test/test2/IP2LOCATION-LITE-DB1.CSV");
+        let file_path = Path::new(r"C:\data\ip-extract\IP2LOCATION-LITE-DB1.IPV6.CSV");
         let list: Vec<IpLocation> = read_csv::<IpLocation>(&file_path).unwrap_or_else(|e| {
             panic!("read csv file error {}", e)
         });
@@ -117,7 +194,7 @@ mod extract_test {
     
     #[test]
     fn format_proxifier_test() {
-        let file_path = Path::new("C:/data/ip-extract/IP2LOCATION-LITE-DB1.CSV");
+        let file_path = Path::new(r"C:\data\ip-extract\IP2LOCATION-LITE-DB1.IPV6.CSV");
         let list: Vec<IpLocation> = read_csv::<IpLocation>(&file_path).unwrap_or_else(|e| {
             panic!("read csv file error {}", e)
         });
