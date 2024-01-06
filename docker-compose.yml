@@ -1,6 +1,6 @@
 services:
   ip-extract:
-    image: ghcr.io/npcdw/ip-extract
+    image: npcdw/ip-extract
     container_name: ip-extract
     volumes:
       - "${PWD}/data/:/data/"
