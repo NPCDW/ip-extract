@@ -14,10 +14,9 @@ ipv6 -> cidr , cidr -> ipv6
 ```
 详见 [ip_tool](/src/ip_tool.rs)，也可以去 [https://0520.site/ip/](https://0520.site/ip/) 在线体验
 
-`docker` 构建
+## 使用
 
-```shell
-git clone --dept=1 https://github.com/NPCDW/ip-extract.git
-cd ip-extract
-docker-compose up
+建议复制该 [`docker-compose.yml`](docker-compose.yml) 文件到服务器，并在同目录下运行
+```bash
+docker compose up
 ```

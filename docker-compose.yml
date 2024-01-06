@@ -1,11 +1,6 @@
-version: '3.3'
-
 services:
   ip-extract:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: ip-extract
+    image: ghcr.io/npcdw/ip-extract
     container_name: ip-extract
     volumes:
       - "${PWD}/data/:/data/"
