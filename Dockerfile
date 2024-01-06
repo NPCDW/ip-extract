@@ -1,4 +1,4 @@
-FROM rust:1.64.0 AS build
+FROM rust:latest AS build
 
 RUN mkdir /usr/src/ip-extract
 WORKDIR /usr/src/ip-extract
