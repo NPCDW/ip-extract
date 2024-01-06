@@ -1,0 +1,87 @@
+name: Build
+
+on:
+  push:
+    tags: "*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build: [macos, windows]
+        include:
+          - build: macos
+            os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            archive-name: ip-extract-macos.tar.gz
+          - build: windows
+            os: windows-latest
+            rust: stable-x86_64-msvc
+            target: x86_64-pc-windows-msvc
+            archive-name: ip-extract-windows.7z
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        profile: minimal
+        override: true
+        target: ${{ matrix.target }}
+    - name: Build
+      run: cargo build --verbose --release --target ${{ matrix.target }}
+      env:
+        RUST_BACKTRACE: 1
+    - name: Strip binary (linux and macos)
+      if: matrix.build == 'macos'
+      run: strip "target/${{ matrix.target }}/release/ip-extract"
+    - name: Build archive
+      shell: bash
+      run: |
+        mkdir archive
+        cp LICENSE README.md archive/
+        cd archive
+        if [ "${{ matrix.build }}" = "windows" ]; then
+          cp "../target/${{ matrix.target }}/release/ip-extract.exe" ./
+          7z a "${{ matrix.archive-name }}" LICENSE README.md ip-extract.exe
+        else
+          cp "../target/${{ matrix.target }}/release/ip-extract" ./
+          tar -czf "${{ matrix.archive-name }}" LICENSE README.md ip-extract
+        fi
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: archive/${{ matrix.archive-name }}
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/npcdw/ip-extract:${{ github.ref_name }}
+            ghcr.io/npcdw/ip-extract:latest
