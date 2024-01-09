@@ -16,18 +16,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        build: [macos, windows]
+        build: [linux, macos, windows]
         include:
+          - build: linux
+            os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-gnu
+            archive-name: ip-extract-${{ github.ref_name }}-linux-amd64.tar.gz
           - build: macos
             os: macos-latest
             rust: stable
             target: x86_64-apple-darwin
-            archive-name: ip-extract-macos.tar.gz
+            archive-name: ip-extract-${{ github.ref_name }}-macos-amd64.tar.gz
           - build: windows
             os: windows-latest
             rust: stable-x86_64-msvc
             target: x86_64-pc-windows-msvc
-            archive-name: ip-extract-windows.7z
+            archive-name: ip-extract-${{ github.ref_name }}-windows-amd64.7z
     steps:
     - uses: actions/checkout@v4
     - name: Install Rust
@@ -40,7 +45,7 @@ jobs:
       env:
         RUST_BACKTRACE: 1
     - name: Strip binary (linux and macos)
-      if: matrix.build == 'macos'
+      if: matrix.build == 'linux' || matrix.build == 'macos'
       run: strip "target/${{ matrix.target }}/release/ip-extract"
     - name: Build archive
       shell: bash
